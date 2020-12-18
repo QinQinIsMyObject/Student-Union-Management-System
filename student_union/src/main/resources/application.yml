@@ -1,2 +1,7 @@
+
 server:
-  port: 8081
+  port: 8088
+  #指定根路径对应的目录
+  context-path: /student_union
+  tomcat:
+    uri-encoding: UTF-8
