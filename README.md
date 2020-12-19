@@ -1041,7 +1041,7 @@ import mock from "@/mock/index.js";
 
 ![image-20201218093539287](images/image-20201218093539287.png)
 
-# 六、优化登录流程
+## 六、优化登录流程
 
 
 
@@ -1688,13 +1688,648 @@ public class HelloController {
 
 ![image-20201218103442097](images/image-20201218103442097.png)
 
-## 四
+## 四、集成 MyBatis 框架
+
+### 方法一：MyBatis（没有实现生成代码）
+
+**引入依赖**
+
+Spring Boot对于MyBatis的支持需要引入mybatis-spring-boot-starter的pom文件。
+
+```xml
+<!--mybatis-->
+<dependency>
+    <groupId>org.mybatis.spring.boot</groupId>
+    <artifactId>mybatis-spring-boot-starter</artifactId>
+    <version>2.1.4</version>
+</dependency>
+```
+
+在加添MySQL等相关依赖后，完整的pom.xml：
+
+```xml
+<!--web-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+<!--mysql数据库驱动-->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<!--mybatis-->
+<dependency>
+    <groupId>org.mybatis.spring.boot</groupId>
+    <artifactId>mybatis-spring-boot-starter</artifactId>
+    <version>2.1.4</version>
+</dependency>
+
+<!--lombok-->
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <optional>true</optional>
+</dependency>
+```
+
+**添加配置**
+
+1.添加MyBatis配置
+
+​		添加MyBatis配置类，配置相关扫描路径，包括DAO，Model，XML映射文件的扫描；新建com.louis.kitty.admin.config包，并创建一个MyBatis配置类，MybatisConfig.java。
+
+```java
+
+```
+
+2.添加数据源配置
+
+打开 application.yml ，添加MySQL数据源连接信息。
+
+```yml
+server:
+  port: 8088
+  #指定根路径对应的目录
+  context-path: /student_union
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/students_union?useUnicode=true&zeroDateTimeBehavior=convertToNull&autoReconnect=true&characterEncoding=utf-8
+    username: root
+    password: 123456
+```
+
+#### MyBatis Generator生成MyBatis模块
+
+​		由于手动编写MyBatis的Model、DAO、XML映射文件比较繁琐，通常都会通过一些生成工具来生成。MyBatis官方也提供了生成工具（MyBaits Generator），另外还有一些基于官方基础上改进的第三方工具，比如MyBatis Plus就是国内提供的一款非常优秀的开源工具，网上相关教程比较多，这里就不再赘述了。
+
+这里提供一些资料作为参考。
+
+>参考：
+>
+>Mybatis Generator 官网：http://mybatis.org/generator/index.html
+>
+>Mybatis Generator 教程：https://blog.csdn.net/testcs_dn/article/details/77881776
+>
+>[程序羊](https://www.codesheep.cn/)：https://www.codesheep.cn/2019/02/14/mybatis-generator/
+
+代码生成好之后，分別将Domain、DAO、XML映射文件拷贝到相应的包里。
 
 
 
+打开Mapper，我们看到MyBatis Generator给我们默认生成了一些增删改查的方法。
 
 
 
+### 方法二：MyBatis Plus
+
+>参考：
+>
+>[程序羊](https://www.codesheep.cn/)：https://www.codesheep.cn/2019/04/12/springbt-mybatis-plus/
+>
+>[遇见狂神说](https://space.bilibili.com/95256449)：https://www.bilibili.com/video/BV17E411N7KN?p=15
+>
+>[超详细！4小时开发一个SpringBoot+vue前后端分离博客项目！！ - MarkerHub](https://www.markerhub.com/project/97)：https://www.markerhub.com/project/97
+>
+>MyBatis Plus 官网：https://baomidou.com/#/
+>
+> [小超zzzzzzz](https://blog.csdn.net/zgc55987)：https://blog.csdn.net/zgc55987/article/details/108941909
+
+**引入依赖**
+
+Spring Boot对于MyBatis Plus的支持需要引入mybatis-plus-boot-starter的pom文件。
+
+```xml
+<!--mybatis-plus-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
+    <version>3.4.1</version>
+</dependency>
+<!--mybatis-plus-generator-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-generator</artifactId>
+    <version>3.4.1</version>
+</dependency>
+```
+
+**注意：mybatis与mybatis plus不要混用！**
+
+在加添MySQL等相关依赖后，完整的pom.xml：
+
+```xml
+<!--web-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+<!--mysql数据库驱动-->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<!--mybatis-plus-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-boot-starter</artifactId>
+    <version>3.4.1</version>
+</dependency>
+<!--mybatis-plus代码生成器-->
+<dependency>
+    <groupId>com.baomidou</groupId>
+    <artifactId>mybatis-plus-generator</artifactId>
+    <version>3.4.1</version>
+</dependency>
+
+<!--freemarker模板-->
+<dependency>
+    <groupId>org.freemarker</groupId>
+    <artifactId>freemarker</artifactId>
+    <version>2.3.30</version>
+</dependency>
+
+<!--lombok-->
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <optional>true</optional>
+</dependency>
+```
+
+**1.配置 MapperScan 注解**：
+
+启动类上添加。
+
+```java
+@MapperScan("cn.asu.mybatisplus.mapper")
+```
+
+**2.添加数据源配置**
+
+目前完整的application.yml 。
+
+```yml
+server:
+  port: 8088
+  #指定根路径对应的目录
+  context-path: /student_union
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/students_union?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+  #禁用模板缓存
+  thymeleaf:
+    cache: false
+
+#mybatis-plus
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**Mapper.xml
+  #配置日志
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #逻辑删除配置
+  global-config:
+    logic-delete-value: 1
+    logic-not-delete-value: 0
+
+# Logger Config
+logging:
+  level:
+    cn.asu: debug
+```
+
+生成代码的代码：
+
+```java
+package cn.asu.generator;
+
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.core.exceptions.MybatisPlusException;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.generator.AutoGenerator;
+import com.baomidou.mybatisplus.generator.InjectionConfig;
+import com.baomidou.mybatisplus.generator.config.*;
+import com.baomidou.mybatisplus.generator.config.po.TableInfo;
+import com.baomidou.mybatisplus.generator.config.rules.DateType;
+import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
+import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+/**
+ * 演示例子，执行 main 方法控制台输入模块表名回车自动生成对应项目目录中
+ */
+public class CodeGenerator {
+
+    /**
+     * 读取控制台内容
+     */
+    public static String scanner(String tip) {
+        //获取控制台输入值
+        Scanner scanner = new Scanner(System.in);
+        StringBuilder help = new StringBuilder();
+        help.append("请输入" + tip + "：");
+        System.out.println(help.toString());
+        if (scanner.hasNext()) {
+            String ipt = scanner.next();
+            if (StringUtils.isNotBlank(ipt)) {
+                return ipt;
+            }
+        }
+        throw new MybatisPlusException("请输入正确的" + tip + "！");
+    }
+
+    public static void main(String[] args) {
+        // 代码生成器
+        AutoGenerator mpg = new AutoGenerator();
+
+        // 全局配置
+        GlobalConfig gc = new GlobalConfig();
+        //项目根目录
+        String projectPath = System.getProperty("user.dir");
+        //用于多个模块下生成到精确的目录下（我设置在桌面）
+        //String projectPath = "C:/Users/xie/Desktop";
+        //代码生成目录
+        gc.setOutputDir(projectPath + "/src/main/java");
+        //开发人员
+        gc.setAuthor("");
+        // 是否打开输出目录(默认值：null)
+        gc.setOpen(false);
+        // 实体属性 Swagger2 注解
+        // gc.setSwagger2(true);
+        // 自定义文件命名，注意 %s 会自动填充表实体属性！
+//        gc.setMapperName("%sMapper");
+//        gc.setXmlName("%sMapper");
+        // service 命名方式
+        gc.setServiceName("%sService");
+        // 是否覆盖已有文件(默认值：false)
+        gc.setFileOverride(true);
+        gc.setActiveRecord(true);
+        // service impl 命名方式
+//        gc.setServiceImplName("%sServiceImpl");
+        // XML 二级缓存
+        gc.setEnableCache(false);
+        // XML ResultMap
+        gc.setBaseResultMap(true);
+        // XML columList
+        gc.setBaseColumnList(false);
+        // 指定生成的主键的ID类型,默认可以不用设置
+        gc.setIdType(IdType.ASSIGN_ID);
+        // 时间类型对应策略
+        gc.setDateType(DateType.ONLY_DATE);
+        //把全局配置添加到代码生成器主类
+        mpg.setGlobalConfig(gc);
+
+        // 数据源配置
+        DataSourceConfig dsc = new DataSourceConfig();
+        //数据库连接
+        dsc.setUrl("jdbc:mysql://localhost:3306/students_union?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=UTC");
+        // 数据库 schema name
+        // dsc.setSchemaName("public");
+        // 数据库类型
+        dsc.setDbType(DbType.MYSQL);
+        // 驱动名称
+        dsc.setDriverName("com.mysql.cj.jdbc.Driver");
+        //用户名
+        dsc.setUsername("root");
+        //密码
+        dsc.setPassword("123456");
+        //把数据源配置添加到代码生成器主类
+        mpg.setDataSource(dsc);
+
+        // 包配置
+        PackageConfig pc = new PackageConfig();
+        // 添加这个后 会以一个实体为一个模块 比如user实体会生成user模块 每个模块下都会生成三层
+        // pc.setModuleName(scanner("模块名"));
+//        pc.setModuleName(null);
+        // 父包名。如果为空，将下面子包名必须写全部， 否则就只需写子包名
+        pc.setParent("cn.asu.mybatisplus");
+        // Entity包名
+        pc.setEntity("entity");
+        // Mapper包名
+        pc.setMapper("mapper");
+        // Mapper.xml包名
+        pc.setXml("mapper");
+        // Service包名
+        pc.setService("service");
+        // ServiceImpl包名
+        pc.setServiceImpl("service.impl");
+        // Controller包名
+        pc.setController("controller");
+        // 把包配置添加到代码生成器主类
+        mpg.setPackageInfo(pc);
+
+        // 自定义配置
+        InjectionConfig cfg = new InjectionConfig() {
+            @Override
+            public void initMap() {
+                // to do nothing
+            }
+        };
+
+        // 如果模板引擎是 freemarker
+        String templatePath = "/templates/mapper.xml.ftl";
+        // 如果模板引擎是 velocity
+        // String templatePath = "/templates/mapper.xml.vm";
+
+        // 自定义输出配置
+        List<FileOutConfig> focList = new ArrayList<>();
+        // 自定义配置会被优先输出
+        focList.add(new FileOutConfig(templatePath) {
+            @Override
+            public String outputFile(TableInfo tableInfo) {
+                // 自定义输出文件名 ， 如果你 Entity 设置了前后缀、此处注意 xml 的名称会跟着发生变化！！
+                return projectPath + "/src/main/resources/mapper/" + pc.getModuleName()
+                        + "/" + tableInfo.getEntityName() + "Mapper" + StringPool.DOT_XML;
+            }
+        });
+        /*
+        cfg.setFileCreate(new IFileCreate() {
+            @Override
+            public boolean isCreate(ConfigBuilder configBuilder, FileType fileType, String filePath) {
+                // 判断自定义文件夹是否需要创建
+                checkDir("调用默认方法创建的目录，自定义目录用");
+                if (fileType == FileType.MAPPER) {
+                    // 已经生成 mapper 文件判断存在，不想重新生成返回 false
+                    return !new File(filePath).exists();
+                }
+                // 允许生成模板文件
+                return true;
+            }
+        });
+        */
+        cfg.setFileOutConfigList(focList);
+        mpg.setCfg(cfg);
+
+        // 配置模板
+        TemplateConfig templateConfig = new TemplateConfig();
+
+        // 配置自定义输出模板
+        //指定自定义模板路径，注意不要带上.ftl/.vm, 会根据使用的模板引擎自动识别
+        // templateConfig.setEntity("templates/entity2.java");
+        // templateConfig.setService();
+        // templateConfig.setController();
+
+        templateConfig.setXml(null);
+        mpg.setTemplate(templateConfig);
+
+        // 策略配置
+        StrategyConfig strategy = new StrategyConfig();
+        // 设置要映射的表名
+//        strategy.setInclude("sys_user","sys_role");
+        // 数据库表映射到实体的命名策略:下划线转驼峰
+        strategy.setNaming(NamingStrategy.underline_to_camel);
+        // 数据库表字段映射到实体的命名策略, 未指定按照 naming 执行
+        strategy.setColumnNaming(NamingStrategy.underline_to_camel);
+        //strategy.setSuperEntityClass("你自己的父类实体,没有就不用设置!");实体是否为lombok模型（默认 false）
+        strategy.setEntityLombokModel(true);
+        strategy.setLogicDeleteFieldName("deleted");
+        // 生成 @RestController 控制器
+        strategy.setRestControllerStyle(true);
+        // 公共父类
+        //strategy.setSuperControllerClass("你自己的父类控制器,没有就不用设置!");
+        // 写于父类中的公共字段,实体类主键名称设置
+//        strategy.setSuperEntityColumns("id");
+        // 需要包含的表名，允许正则表达式
+        // 这里做了输入设置
+        strategy.setInclude(scanner("表名，多个英文逗号分割").split(","));
+        // 需要排除的表名，允许正则表达式
+        //strategy.setExclude("***");
+        // 是否生成实体时，生成字段注解 默认false;
+        strategy.setEntityTableFieldAnnotationEnable(true);
+        // 驼峰转连字符
+        strategy.setControllerMappingHyphenStyle(true);
+        // 表前缀
+        strategy.setTablePrefix(pc.getModuleName() + "_");
+        // 把数据库配置添加到代码生成器主类
+        mpg.setStrategy(strategy);
+        // 乐观锁
+        strategy.setVersionFieldName("version");
+        // 在代码生成器主类上配置模板引擎
+        mpg.setTemplateEngine(new FreemarkerTemplateEngine());
+        //生成
+        mpg.execute();
+    }
+
+}
+```
+
+项目结构
+
+![image-20201219144855510](images/image-20201219144855510.png)
+
+生成代码
+
+```sh
+sys_dept,sys_log,sys_menu,sys_role,sys_role_dept,sys_role_menu,sys_user,sys_role
+```
+
+![image-20201219164902876](images/image-20201219164902876.png)
+
+#### 简单测试（一）
+
+在UserController中写个测试：
+
+```java
+package cn.asu.mybatisplus.controller;
+
+
+import cn.asu.mybatisplus.service.SysUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * <p>
+ * 用户管理 前端控制器
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+@RestController
+@RequestMapping("/sys-user")
+public class SysUserController {
+
+    @Autowired
+    SysUserService sysUserService;
+
+    @GetMapping("/{id}")
+    public Object test(@PathVariable("id") Long id) {
+        return sysUserService.getById(id);
+    }
+
+}
+```
+
+访问：http://localhost:8088/sys-user/22
+
+![image-20201219165503668](images/image-20201219165503668.png)
+
+#### 简单测试（二）
+
+向 SysUserMapper.java 类中新一个 selectAll 方法，用于查询所有的用户信息。
+
+```java
+package cn.asu.mybatisplus.mapper;
+
+import cn.asu.mybatisplus.entity.SysUser;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 用户管理 Mapper 接口
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+public interface SysUserMapper extends BaseMapper<SysUser> {
+
+    /**
+     * 查询全部
+     * @return
+     */
+    List<SysUser> selectAll();
+
+}
+```
+
+向 SysUserMapper.xml 中加入 selectAll 的查询语句。
+
+```xml
+<select id="selectAll" resultMap="BaseResultMap">
+    select *
+    from sys_user
+</select>
+```
+
+编写 SysUserService.java 接口，包含 selectAll 和 findByUserId 两个方法。
+
+```java
+package cn.asu.mybatisplus.service;
+
+import cn.asu.mybatisplus.entity.SysUser;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 用户管理 服务类
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+public interface SysUserService extends IService<SysUser> {
+    
+    /**
+     * 根据用户ID查找用户
+     * @param userId
+     * @return
+     */
+    SysUser findByUserId(Long userId);
+
+    /**
+     * 查找所有用户
+     * @return
+     */
+    List<SysUser> findAll();
+    
+}
+```
+
+编写 SysUserServiceImpl.java 实现类，调用 SysUserMapper 方法完成查询操作。
+
+```java
+package cn.asu.mybatisplus.service.impl;
+
+import cn.asu.mybatisplus.entity.SysUser;
+import cn.asu.mybatisplus.mapper.SysUserMapper;
+import cn.asu.mybatisplus.service.SysUserService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 用户管理 服务实现类
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+@Service
+public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
+
+    @Autowired
+    private SysUserMapper sysUserMapper;
+
+    @Override
+    public SysUser findByUserId(Long userId) {
+        return sysUserMapper.selectById(userId);
+    }
+
+    @Override
+    public List<SysUser> findAll() {
+        return sysUserMapper.selectAll();
+    }
+    
+}
+```
+
+编写 SysUserController.java 接口，返回JSON数据格式，提供外部调用。
+
+```java
+@GetMapping(value="/findByUserId")
+public Object findByUserId(@RequestParam Long userId) {
+    return sysUserService.findByUserId(userId);
+}
+
+@GetMapping(value="/findAll")
+public Object findAll() {
+    return sysUserService.findAll();
+}
+```
+
+**测试运行**
+
+编译启动，分别访问： http://localhost:8088/user/findAll，都能看到结果正常返回。
+
+![image-20201219180024829](images/image-20201219180024829.png)
+
+访问：http://localhost:8088/user/findByUserId?userId=1
+
+![image-20201219180001319](images/image-20201219180001319.png)
+
+**方法三：使用插件easy code**
 
 
 

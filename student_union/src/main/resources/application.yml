@@ -1,7 +1,32 @@
-
 server:
   port: 8088
   #指定根路径对应的目录
   context-path: /student_union
   tomcat:
     uri-encoding: UTF-8
+
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/students_union?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+  #禁用模板缓存
+  thymeleaf:
+    cache: false
+
+#mybatis-plus
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**Mapper.xml
+  #配置日志
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #逻辑删除配置
+  global-config:
+    logic-delete-value: 1
+    logic-not-delete-value: 0
+
+# Logger Config
+logging:
+  level:
+    cn.asu: debug

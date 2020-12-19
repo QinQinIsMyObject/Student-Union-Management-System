@@ -1,0 +1,28 @@
+Index: src/main/java/cn/asu/generator/CodeGenerator.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/cn/asu/generator/CodeGenerator.java	(date 1608363951031)
++++ src/main/java/cn/asu/generator/CodeGenerator.java	(date 1608363951031)
+@@ -100,10 +100,9 @@
+         PackageConfig pc = new PackageConfig();
+         // 添加这个后 会以一个实体为一个模块 比如user实体会生成user模块 每个模块下都会生成三层
+         // pc.setModuleName(scanner("模块名"));
+-		pc.setModuleName(null);
++        pc.setModuleName(null);
+         // 父包名。如果为空，将下面子包名必须写全部， 否则就只需写子包名
+         pc.setParent("cn.asu.mybatisplus");
+-
+         // Entity包名
+         pc.setEntity("entity");
+         // Mapper包名
+@@ -114,7 +113,7 @@
+         pc.setService("service");
+         // ServiceImpl包名
+         pc.setServiceImpl("service.impl");
+-		        // Controller包名
++        // Controller包名
+         pc.setController("controller");
+         // 把包配置添加到代码生成器主类
+         mpg.setPackageInfo(pc);
