@@ -2333,7 +2333,7 @@ public Object findAll() {
 
 ## 五、模块化切分
 
-### 切分工程
+**切分工程**
 
 考虑到后续我们的模块会越来越多，依赖的公共代码和配置需要集中管理，我们在这里先把公共模块和配置从后台管理业务中剥离出来。
 
@@ -2379,17 +2379,790 @@ public Object findAll() {
 
 ![image-20201220131526185](images/image-20201220131526185.png)
 
+## 六、集成 Swagger API
+
+spring-boot作为当前最为流行的Java web开发脚手架，越来越多的开发者选择用其来构建企业级的RESTFul API接口。这些接口不但会服务于传统的web端（b/s），也会服务于移动端。在实际开发过程中，这些接口还要提供给开发测试进行相关的白盒测试，那么势必存在如何在多人协作中共享和及时更新API开发接口文档的问题。 
+
+假如你已经对传统的wiki文档共享方式所带来的弊端深恶痛绝，那么尝试一下Swagger2 方式，一定会让你有不一样的开发体验。
+
+使用 Swagger 集成文档具有以下几个优势：
+
+- 功能丰富 ：支持多种注解，自动生成接口文档界面，支持在界面测试API接口功能；
+- 及时更新 ：开发过程中花一点写注释的时间，就可以及时的更新API文档，省心省力；
+- 整合简单 ：通过添加pom依赖和简单配置，内嵌于应用中就可同时发布API接口文档界面，不需要部署独立服务。
+
+**1 . 添加依赖**
+
+在boot工程中添加 Maven 依赖， 这里选择 2.9.2 版本。
+
+```xml
+<!-- swagger -->
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.9.2</version>
+</dependency>
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.9.2</version>
+</dependency>
+```
+
+**2.添加配置类**
+
+添加 swagger 配置类，在 boot工程下新建config 包并添加 SwaggerConfig 配置类。
+
+```java
+package cn.asu.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@Configuration
+@EnableSwagger2
+public class SwaggerConfig {
+
+    @Bean
+    public Docket createRestApi(){
+        return new Docket(DocumentationType.SWAGGER_2).apiInfo(apiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.any())
+                .paths(PathSelectors.any()).build();
+    }
+
+    private ApiInfo apiInfo(){
+        return new ApiInfoBuilder()
+                .title("Kitty API Doc")
+                .description("This is a restful api document of Kitty.")
+                .version("1.0")
+                .build();
+    }
+
+}
+```
+
+**3.启动测试**
+
+启动启动类, 浏览器访问：http://localhost:8089/swagger-ui.html
+
+![image-20201220140503633](images/image-20201220140503633.png)
+
+我们看到 Swagger 已经集成进来了，选择 sys-user-controller，依次点击 try it out -> execute，结果成功返回。
+
+![image-20201220140708037](images/image-20201220140708037.png)
+
+![image-20201220140724323](images/image-20201220140724323.png)
+
+注：启动报错
+
+![image-20201220134753426](images/image-20201220134753426.png)
+
+解决办法为换一个端口。
+
+> 转自：https://blog.csdn.net/u012313361/article/details/106011415
+
+![image-20201220135425484](images/image-20201220135425484.png)
+
+解决办法：jdk版本为11，需要在boot工程添加这个依赖
+
+```xml
+<!--jdk版本为11，需要添加这个依赖-->
+<dependency>
+    <groupId>javax.xml.bind</groupId>
+    <artifactId>jaxb-api</artifactId>
+</dependency>
+```
+
+**4.常用注解**
+
+swagger 通过注解接口生成文档，包括接口名，请求方法，参数，返回信息等
+
+@Api: 修饰整个类，用于controller类上
+
+@ApiOperation: 描述一个接口，用户controller方法上
+
+@ApiParam: 单个参数描述
+
+@ApiModel: 用来对象接收参数,即返回对象
+
+@ApiModelProperty: 对象接收参数时，描述对象的字段
+
+@ApiResponse: Http响应其中的描述，在ApiResonse中
+
+@ApiResponses: Http响应所有的描述，用在
+
+@ApiIgnore: 忽略这个API
+
+@ApiError: 发生错误的返回信息
+
+@ApiImplicitParam: 一个请求参数
+
+@ApiImplicitParam: 多个请求参数
+
+更多说明参考 [Swagger 使用手册](https://gumutianqi1.gitbooks.io/specification-doc/content/tools-doc/spring-boot-swagger2-guide.html)
+
+**5.使用案例**
+
+在admin中SysUserController.java添加。
+
+```java
+package cn.asu.mybatisplus.controller;
 
 
+import cn.asu.mybatisplus.service.SysUserService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
+/**
+ * <p>
+ * 用户管理 前端控制器
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+@RestController
+@RequestMapping("/sys-user")
+@Api(value = "用户控制器")
+public class SysUserController {
 
+    @Autowired
+    SysUserService sysUserService;
 
+    @GetMapping("/{id}")
+    public Object test(@PathVariable("id") Long id) {
+        return sysUserService.getById(id);
+    }
 
+//    @GetMapping(value = "/findByUserId")
+//    public Object findByUserId(@RequestParam Long userId) {
+//        return sysUserService.findByUserId(userId);
+//    }
+//
+//    @GetMapping(value = "/findAll")
+//    public Object findAll() {
+//        return sysUserService.findAll();
+//    }
 
+    @ApiOperation(value="获取用户信息", notes="根据用户ID获取用户信息")
+    @ApiImplicitParam(name = "userId", value = "用户ID", required = true, dataType = "Long")
+    @GetMapping(value="/findByUserId")
+    public Object findByUserId(@RequestParam Long userId) {
+        return sysUserService.findByUserId(userId);
+    }
 
+    @GetMapping(value="/findAll")
+    public Object findAll() {
+        return sysUserService.findAll();
+    }
 
+}
+```
 
+在admin工程中也需要添加swagger依赖
 
+```xml
+<!-- swagger -->
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.9.2</version>
+</dependency>
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.9.2</version>
+</dependency>
+```
+
+![image-20201220141701258](images/image-20201220141701258.png)
+
+![image-20201220141722432](images/image-20201220141722432.png)
+
+**6.参考资料**
+
+官方网站：https://swagger.io/
+
+使用手册：https://gumutianqi1.gitbooks.io/specification-doc/content/tools-doc/spring-boot-swagger2-guide.html
+
+网上教程：https://www.cnblogs.com/xiaohanghang/p/6018654.html
+
+## 七、集成 Druid 数据源
+
+数据库连接池负责分配、管理和释放数据库连接，它允许应用程序重复使用一个现有的数据库连接，而不是再重新建立一个；释放空闲时间超过最大空闲时间的数据库连接来避免因为没有释放数据库连接而引起的数据库连接遗漏。通过数据库连接池能明显提高对数据库操作的性能。在Java应用程序开发中，常用的连接池有DBCP、C3P0、Proxool等。
+
+Spring Boot默认提供了若干种可用的连接池，默认的数据源是：org.apache.tomcat.jdbc.pool.DataSource。而Druid是阿里系提供的一个开源连接池，除在连接池之外，Druid还提供了非常优秀的数据库监控和扩展功能。在此，根据项目实践中的应用，讲解如何实现Spring Boot与Druid连接池的集成。
+
+### Druid介绍
+
+Druid是阿里开源的一个JDBC应用组件， 其包括三部分：
+
+- DruidDriver: 代理Driver，能够提供基于Filter－Chain模式的插件体系。
+- DruidDataSource: 高效可管理的数据库连接池。
+- SQLParser: 实用的SQL语法分析
+
+通过Druid连接池中间件， 我们可以实现：
+
+- 可以监控数据库访问性能，Druid内置提供了一个功能强大的StatFilter插件，能够详细统计SQL的执行性能，这对于线上分析数据库访问性能有帮助。
+- 替换传统的DBCP和C3P0连接池中间件。Druid提供了一个高效、功能强大、可扩展性好的数据库连接池。
+- 数据库密码加密。直接把数据库密码写在配置文件中，容易导致安全问题。DruidDruiver和DruidDataSource都支持PasswordCallback。
+- SQL执行日志，Druid提供了不同的LogFilter，能够支持Common-Logging、Log4j和JdkLog，你可以按需要选择相应的LogFilter，监控你应用的数据库访问情况。
+- 扩展JDBC，如果你要对JDBC层有编程的需求，可以通过Druid提供的Filter-Chain机制，很方便编写JDBC层的扩展插件。
+
+更多详细信息参考官方文档：https://github.com/alibaba/druid/wiki
+
+### 添加依赖
+
+在boot中添加 druid 相关的 maven 依赖。
+
+```xml
+<!--druid数据源-->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid-spring-boot-starter</artifactId>
+    <version>1.1.22</version>
+</dependency>
+```
+
+Druid Spring Boot Starter 是阿里官方提供的 Spring Boot 插件，用于帮助在Spring Boot项目中轻松集成Druid数据库连接池和监控。
+
+更多资料参考:
+
+Druid: https://github.com/alibaba/druid
+
+Druid Spring Starter: https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
+
+### 添加配置
+
+把原有的数据源配置替换成 druid 数据源并配置数据源相关参数。
+
+boot/application.yml
+
+```yml
+server:
+  port: 8089
+  #指定根路径对应的目录
+  context-path: /student_union
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  datasource:
+#    driverClassName: com.mysql.cj.jdbc.Driver
+#    url: jdbc:mysql://localhost:3306/students_union?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+#    username: root
+#    password: 123456
+    name: druidDataSource
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/students_union?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: root
+      password: 123456
+      filters: stat,wall,log4j,config
+      max-active: 100
+      initial-size: 1
+      max-wait: 60000
+      min-idle: 1
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: select 'x'
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-open-prepared-statements: 50
+      max-pool-prepared-statement-per-connection-size: 20
+  #禁用模板缓存
+  thymeleaf:
+    cache: false
+
+#mybatis-plus
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**Mapper.xml
+  #配置日志
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #逻辑删除配置
+  global-config:
+    logic-delete-value: 1
+    logic-not-delete-value: 0
+
+# Logger Config
+logging:
+  level:
+    cn.asu: debug
+```
+
+**参数说明：**
+
+\- spring.datasource.druid.max-active 最大连接数 
+\- spring.datasource.druid.initial-size 初始化大小 
+\- spring.datasource.druid.min-idle 最小连接数 
+\- spring.datasource.druid.max-wait 获取连接等待超时时间 
+\- spring.datasource.druid.time-between-eviction-runs-millis 间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 
+\- spring.datasource.druid.min-evictable-idle-time-millis 一个连接在池中最小生存的时间，单位是毫秒 
+\- spring.datasource.druid.filters=config,stat,wall,log4j 配置监控统计拦截的filters，去掉后监控界面SQL无法进行统计，’wall’用于防火墙
+
+**Druid提供以下几种Filter信息：**
+
+| Filter类名    | 别名                                                    |
+| ------------- | ------------------------------------------------------- |
+| default       | com.alibaba.druid.filter.stat.StatFilter                |
+| stat          | com.alibaba.druid.filter.stat.StatFilter                |
+| mergeStat     | com.alibaba.druid.filter.stat.MergeStatFilter           |
+| encoding      | com.alibaba.druid.filter.encoding.EncodingConvertFilter |
+| log4j         | com.alibaba.druid.filter.logging.Log4jFilter            |
+| log4j2        | com.alibaba.druid.filter.logging.Log4j2Filter           |
+| slf4j         | com.alibaba.druid.filter.logging.Slf4jLogFilter         |
+| commonlogging | com.alibaba.druid.filter.logging.CommonsLogFilter       |
+| wall          | com.alibaba.druid.wall.WallFilter                       |
+
+**自定义配置属性**
+
+注：配置都在boot中。
+
+如果需要通过定制的配置文件对druid进行自定义属性配置，添加配置类如下：
+
+```java
+package cn.asu.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "spring.datasource.druid")
+public class DruidDataSourceProperties {
+
+    // jdbc
+    private String driverClassName;
+    private String url;
+    private String username;
+    private String password;
+    // jdbc connection pool
+    private int initialSize;
+    private int minIdle;
+    private int maxActive = 100;
+    private long maxWait;
+    private long timeBetweenEvictionRunsMillis;
+    private long minEvictableIdleTimeMillis;
+    private String validationQuery;
+    private boolean testWhileIdle;
+    private boolean testOnBorrow;
+    private boolean testOnReturn;
+    private boolean poolPreparedStatements;
+    private int maxPoolPreparedStatementPerConnectionSize;
+    // filter
+    private String filters;
+
+    public int getInitialSize() {
+        return initialSize;
+    }
+
+    public void setInitialSize(int initialSize) {
+        this.initialSize = initialSize;
+    }
+
+    public int getMinIdle() {
+        return minIdle;
+    }
+
+    public void setMinIdle(int minIdle) {
+        this.minIdle = minIdle;
+    }
+
+    public int getMaxActive() {
+        return maxActive;
+    }
+
+    public void setMaxActive(int maxActive) {
+        this.maxActive = maxActive;
+    }
+
+    public long getMaxWait() {
+        return maxWait;
+    }
+
+    public void setMaxWait(long maxWait) {
+        this.maxWait = maxWait;
+    }
+
+    public long getTimeBetweenEvictionRunsMillis() {
+        return timeBetweenEvictionRunsMillis;
+    }
+
+    public void setTimeBetweenEvictionRunsMillis(long timeBetweenEvictionRunsMillis) {
+        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+    }
+
+    public long getMinEvictableIdleTimeMillis() {
+        return minEvictableIdleTimeMillis;
+    }
+
+    public void setMinEvictableIdleTimeMillis(long minEvictableIdleTimeMillis) {
+        this.minEvictableIdleTimeMillis = minEvictableIdleTimeMillis;
+    }
+
+    public String getValidationQuery() {
+        return validationQuery;
+    }
+
+    public void setValidationQuery(String validationQuery) {
+        this.validationQuery = validationQuery;
+    }
+
+    public boolean isTestWhileIdle() {
+        return testWhileIdle;
+    }
+
+    public void setTestWhileIdle(boolean testWhileIdle) {
+        this.testWhileIdle = testWhileIdle;
+    }
+
+    public boolean isTestOnBorrow() {
+        return testOnBorrow;
+    }
+
+    public void setTestOnBorrow(boolean testOnBorrow) {
+        this.testOnBorrow = testOnBorrow;
+    }
+
+    public boolean isTestOnReturn() {
+        return testOnReturn;
+    }
+
+    public void setTestOnReturn(boolean testOnReturn) {
+        this.testOnReturn = testOnReturn;
+    }
+
+    public boolean isPoolPreparedStatements() {
+        return poolPreparedStatements;
+    }
+
+    public void setPoolPreparedStatements(boolean poolPreparedStatements) {
+        this.poolPreparedStatements = poolPreparedStatements;
+    }
+
+    public int getMaxPoolPreparedStatementPerConnectionSize() {
+        return maxPoolPreparedStatementPerConnectionSize;
+    }
+
+    public void setMaxPoolPreparedStatementPerConnectionSize(int maxPoolPreparedStatementPerConnectionSize) {
+        this.maxPoolPreparedStatementPerConnectionSize = maxPoolPreparedStatementPerConnectionSize;
+    }
+
+    public String getFilters() {
+        return filters;
+    }
+
+    public void setFilters(String filters) {
+        this.filters = filters;
+    }
+
+    public String getDriverClassName() {
+        return driverClassName;
+    }
+
+    public void setDriverClassName(String driverClassName) {
+        this.driverClassName = driverClassName;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+}
+```
+
+Druid Spring Starter 简化了很多配置，如果默认配置满足不了你的需求，可以自定义配置。更多配置参考：
+
+Druid Spring Starter: https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
+
+### 配置Servlet和Filter
+
+```java
+package cn.asu.config;
+
+import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.support.http.StatViewServlet;
+import com.alibaba.druid.support.http.WebStatFilter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import javax.servlet.Filter;
+import javax.servlet.Servlet;
+import javax.sql.DataSource;
+import java.sql.SQLException;
+
+@Configuration
+@EnableConfigurationProperties({DruidDataSourceProperties.class})
+public class DruidConfig {
+    @Autowired
+    private DruidDataSourceProperties properties;
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DataSource druidDataSource() {
+        DruidDataSource druidDataSource = new DruidDataSource();
+        druidDataSource.setDriverClassName(properties.getDriverClassName());
+        druidDataSource.setUrl(properties.getUrl());
+        druidDataSource.setUsername(properties.getUsername());
+        druidDataSource.setPassword(properties.getPassword());
+        druidDataSource.setInitialSize(properties.getInitialSize());
+        druidDataSource.setMinIdle(properties.getMinIdle());
+        druidDataSource.setMaxActive(properties.getMaxActive());
+        druidDataSource.setMaxWait(properties.getMaxWait());
+        druidDataSource.setTimeBetweenEvictionRunsMillis(properties.getTimeBetweenEvictionRunsMillis());
+        druidDataSource.setMinEvictableIdleTimeMillis(properties.getMinEvictableIdleTimeMillis());
+        druidDataSource.setValidationQuery(properties.getValidationQuery());
+        druidDataSource.setTestWhileIdle(properties.isTestWhileIdle());
+        druidDataSource.setTestOnBorrow(properties.isTestOnBorrow());
+        druidDataSource.setTestOnReturn(properties.isTestOnReturn());
+        druidDataSource.setPoolPreparedStatements(properties.isPoolPreparedStatements());
+        druidDataSource.setMaxPoolPreparedStatementPerConnectionSize(properties.getMaxPoolPreparedStatementPerConnectionSize());
+
+        try {
+            druidDataSource.setFilters(properties.getFilters());
+            druidDataSource.init();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return druidDataSource;
+    }
+
+    /**
+     * 注册Servlet信息， 配置监控视图
+     *
+     * @return
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public ServletRegistrationBean<Servlet> druidServlet() {
+        ServletRegistrationBean<Servlet> servletRegistrationBean = new ServletRegistrationBean<Servlet>(new StatViewServlet(), "/druid/*");
+
+        //白名单：
+        servletRegistrationBean.addInitParameter("allow", "192.168.1.195");
+        //IP黑名单 (存在共同时，deny优先于allow) : 如果满足deny的话提示:Sorry, you are not permitted to view this page.
+        servletRegistrationBean.addInitParameter("deny", "192.168.1.119");
+        //登录查看信息的账号密码, 用于登录Druid监控后台
+        servletRegistrationBean.addInitParameter("loginUsername", "admin");
+        servletRegistrationBean.addInitParameter("loginPassword", "admin");
+        //是否能够重置数据.
+        servletRegistrationBean.addInitParameter("resetEnable", "true");
+        return servletRegistrationBean;
+
+    }
+
+    /**
+     * 注册Filter信息, 监控拦截器
+     *
+     * @return
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public FilterRegistrationBean<Filter> filterRegistrationBean() {
+        FilterRegistrationBean<Filter> filterRegistrationBean = new FilterRegistrationBean<Filter>();
+        filterRegistrationBean.setFilter(new WebStatFilter());
+        filterRegistrationBean.addUrlPatterns("/*");
+        filterRegistrationBean.addInitParameter("exclusions", "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*");
+        return filterRegistrationBean;
+    }
+}
+```
+
+**说明:**
+
+\- @EnableConfigurationProperties({DruidDataSourceProperties.class}) 用于导入上一步Druid的配置信息 
+\- public ServletRegistrationBean druidServlet() 相当于Web Servlet配置 
+\- public FilterRegistrationBean filterRegistrationBean() 相当于Web Filter配置
+
+如果不使用上述的Servlet和Filter配置， 也可以通过下述监控器配置实现：
+
+**配置监控拦截器（相当于FilterRegistrationBean）**
+
+```java
+package cn.asu.config;
+
+import com.alibaba.druid.support.http.WebStatFilter;
+
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebInitParam;
+
+/**
+ * 配置监控拦截器, druid监控拦截器
+ */
+@WebFilter(filterName = "druidWebStatFilter",
+        urlPatterns = "/*",
+        initParams = {
+                @WebInitParam(name = "exclusions", value = "*.js,*.gif,*.jpg,*.bmp,*.png,*.css,*.ico,/druid/*"), // 忽略资源
+        })
+public class DruidStatFilter extends WebStatFilter {
+
+}
+```
+
+**配置Druid监控视图（相当于ServletRegistrationBean）**
+
+```java
+package cn.asu.config;
+
+import com.alibaba.druid.support.http.StatViewServlet;
+
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
+
+/**
+ * druid监控视图配置
+ */
+@WebServlet(urlPatterns = "/druid/*", initParams = {
+        @WebInitParam(name = "allow", value = "192.168.6.195"),    // IP白名单 (没有配置或者为空，则允许所有访问)
+        @WebInitParam(name = "deny", value = "192.168.6.73"),    // IP黑名单 (存在共同时，deny优先于allow)
+        @WebInitParam(name = "loginUsername", value = "admin"),    // 用户名
+        @WebInitParam(name = "loginPassword", value = "admin"),    // 密码
+        @WebInitParam(name = "resetEnable", value = "true")    // 禁用HTML页面上的“Reset All”功能
+})
+public class DruidStatViewServlet extends StatViewServlet {
+    private static final long serialVersionUID = 7359758657306626394L;
+}
+```
+
+**添加 log4j 依赖**
+
+在 boot/pom.xml 添加 log4j 依赖，最新版本是 1.2.17。
+
+```xml
+<!-- log4j -->
+<dependency>
+    <groupId>log4j</groupId>
+    <artifactId>log4j</artifactId>
+    <version>1.2.17</version>
+</dependency>
+```
+
+**添加 log4j 配置**
+
+在 kitty-boot/resources 目录下，新建一个 log4j.properties 参数配置文件，并键入如下内容：
+
+```properties
+### set log levels ###
+log4j.rootLogger = INFO,DEBUG, console, infoFile, errorFile ,debugFile, mail 
+LocationInfo=true    
+
+log4j.appender.console = org.apache.log4j.ConsoleAppender  
+log4j.appender.console.Target = System.out  
+log4j.appender.console.layout = org.apache.log4j.PatternLayout 
+
+log4j.appender.console.layout.ConversionPattern =[%d{yyyy-MM-dd HH:mm:ss,SSS}]-[%p]:%m   %x %n 
+
+log4j.appender.infoFile = org.apache.log4j.DailyRollingFileAppender  
+log4j.appender.infoFile.Threshold = INFO  
+log4j.appender.infoFile.File = D:/logs/log
+log4j.appender.infoFile.DatePattern = '.'yyyy-MM-dd'.log'  
+log4j.appender.infoFile.Append=true
+log4j.appender.infoFile.layout = org.apache.log4j.PatternLayout  
+log4j.appender.infoFile.layout.ConversionPattern =[%d{yyyy-MM-dd HH:mm:ss,SSS}]-[%p]:%m  %x %n 
+
+log4j.appender.errorFile = org.apache.log4j.DailyRollingFileAppender  
+log4j.appender.errorFile.Threshold = ERROR  
+log4j.appender.errorFile.File = D:/logs/error  
+log4j.appender.errorFile.DatePattern = '.'yyyy-MM-dd'.log'  
+log4j.appender.errorFile.Append=true  
+log4j.appender.errorFile.layout = org.apache.log4j.PatternLayout  
+log4j.appender.errorFile.layout.ConversionPattern =[%d{yyyy-MM-dd HH:mm:ss,SSS}]-[%p]:%m  %x %n
+
+#log4j.appender.debugfile = org.apache.log4j.DailyRollingFileAppender
+#log4j.appender.debugfile.Threshold = DEBUG
+#log4j.appender.debugfile.File = D:/logs/debug
+#log4j.appender.debugfile.DatePattern = '.'yyyy-MM-dd'.log'
+#log4j.appender.debugfile.Append=true
+#log4j.appender.debugfile.layout = org.apache.log4j.PatternLayout
+#log4j.appender.debugfile.layout.ConversionPattern =[%d{yyyy-MM-dd HH:mm:ss,SSS}]-[%p]:%m  %x %n
+```
+
+**注意：配置完成后，就已经可以启动了。Spring Boot 是集成了 log4j的，可以省略掉配置log4j这步，有解决的朋友，欢迎赐教，感激不尽**
+
+### 查看监控
+
+**登录界面**
+
+启动应用，访问：http://localhost:8089/druid/login.html， 进入Druid监控后台页面。密码和用户名均为admin
+
+![image-20201220151029534](images/image-20201220151029534.png)
+
+**登录首页**
+
+首页信息。
+
+![image-20201220151355583](images/image-20201220151355583.png)
+
+**数据源**
+
+显示连接数据源的相关信息。
+
+![image-20201220151423031](images/image-20201220151423031.png)
+
+**SQL监控**
+
+分别访问下面两个接口之后，SQL监控的记录结果。
+
+http://localhost:8089/sys-user/findByUserId?userId=1
+
+http://localhost:8089/sys-user/findAll
+
+![image-20201220151705408](images/image-20201220151705408.png)
+
+**URI监控**
+
+分别访问下面两个接口之后，URI监控的记录结果。
+
+http://localhost:8089/sys-user/findByUserId?userId=1
+
+http://localhost:8089/sys-user/findAll
+
+![image-20201220151759936](images/image-20201220151759936.png)
+
+### 参考资料
+
+https://github.com/alibaba/druid/wiki
+
+https://blog.csdn.net/garyond/article/details/80189939
+
+https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
 
 
 
