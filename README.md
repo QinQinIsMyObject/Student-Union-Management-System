@@ -2331,15 +2331,53 @@ public Object findAll() {
 
 **方法三：使用插件easy code**
 
+## 五、模块化切分
 
+### 切分工程
 
+考虑到后续我们的模块会越来越多，依赖的公共代码和配置需要集中管理，我们在这里先把公共模块和配置从后台管理业务中剥离出来。
 
+新增两个工程，切分后结构如下：
 
+**student_union-boot**：启动器及全局配置模块
 
+**student_union-common**：公共代码模块，主要提供一些工具类
 
+**student_union-admin**：后台管理系统相关业务模块
 
+为避免出错，这三个模块为重新新建的项目，复制之前的代码进入。
 
+#### 1. student_union-common
 
+新建一个 Maven 工程 kitty-common 用来存放后续的公共代码，暂时空空如也。
+
+![image-20201220112840521](images/image-20201220112840521.png)
+
+#### 2.student_union-boot
+
+启动类及配置文件模块。
+
+![image-20201220130928234](images/image-20201220130928234.png)
+
+注：需要引入其他模块的依赖。
+
+![image-20201220131031552](images/image-20201220131031552.png)
+
+#### 3.student_union-admin
+
+ 相关业务。
+
+![image-20201220131157375](images/image-20201220131157375.png)
+
+注：需要引入其他模块的依赖。
+
+![image-20201220131405502](images/image-20201220131405502.png)
+
+#### 4.编译运行
+
+运行 student_union-boot的启动类 ，启动成功之后，访问此前的接口（例如：http://localhost:8089/sys-user/findAll）正常，工程切分完成。
+
+![image-20201220131526185](images/image-20201220131526185.png)
 
 
 
