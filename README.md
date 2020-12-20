@@ -3164,7 +3164,313 @@ https://blog.csdn.net/garyond/article/details/80189939
 
 https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
 
+## 八、MyBatis分页功能实现
+
+使用Mybatis时，最头痛的就是写分页，需要先写一个查询count的select语句，然后再写一个真正分页查询的语句，当查询条件多了之后，会发现真不想花双倍的时间写 count 和 select，幸好我们有 pagehelper 分页插件，pagehelper 是一个强大实用的 MyBatis 分页插件，可以帮助我们快速的实现分页功能。那么，接下来我们就来一起体验下吧。
+
+### 添加依赖
+
+在 admin-pom.xml 文件内添加分页插件依赖包。
+
+```xml
+<!-- pagehelper -->
+<dependency>
+    <groupId>com.github.pagehelper</groupId>
+    <artifactId>pagehelper-spring-boot-starter</artifactId>
+    <version>1.3.0</version>
+</dependency>
+```
+
+### 添加配置
+
+在 boot/application.yml 配置文件内添加分页插件配置。
+
+```yml
+# pagehelper   
+pagehelper:
+    helperDialect: mysql
+    reasonable: true
+    supportMethodsArguments: true
+    params: count=countSql
+```
+
+### 分页代码
+
+首先，在 DAO 层添加分页查找方法。因为我们的表只有菜单有多条数据，所以选择给菜单加一个分页查询接口。
+
+admin/SysMenuMapper.java
+
+```java
+package cn.asu.mybatisplus.mapper;
+
+import cn.asu.mybatisplus.entity.SysMenu;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 菜单管理 Mapper 接口
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+public interface SysMenuMapper extends BaseMapper<SysMenu> {
+
+    /**
+     * 分页查询
+     * @return
+     */
+    List<SysMenu> selectPage();
+
+}
+```
+
+给 SysMenuMapper.xml 添加查询方法，这是一个普通的查找全部记录的查询语句，并不需要写分页SQL，分页插件会拦截查询请求，并读取前台传来的分页查询参数重新生成分页查询语句。
+
+```xml
+<select id="selectPage" resultMap="BaseResultMap">
+    select *
+    from sys_menu
+</select>
+```
+
+服务层调用DAO层完成分页查询，这里统一封装分页查询的请求和结果类，从而避免因为替换ORM框架而导致服务层、控制层的分页接口也需要变动的情况，替换ORM框架也不会影响服务层以上的分页接口，起到了解耦的作用。
+
+admin/SysMenuService.java
+
+```java
+package cn.asu.mybatisplus.service;
+
+import cn.asu.mybatisplus.entity.SysMenu;
+import cn.asu.page.PageRequest;
+import cn.asu.page.PageResult;
+import com.baomidou.mybatisplus.extension.service.IService;
+
+/**
+ * <p>
+ * 菜单管理 服务类
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+public interface SysMenuService extends IService<SysMenu> {
+
+    /**
+     * 分页查询接口
+     * 这里统一封装了分页请求和结果，避免直接引入具体框架的分页对象, 如MyBatis或JPA的分页对象
+     * 从而避免因为替换ORM框架而导致服务层、控制层的分页接口也需要变动的情况，替换ORM框架也不会
+     * 影响服务层以上的分页接口，起到了解耦的作用
+     * @param pageRequest 自定义，统一分页查询请求
+     * @return PageResult 自定义，统一分页查询结果
+     */
+    PageResult findPage(PageRequest pageRequest);
+
+}
+```
+
+服务实现类调用分页插件完成分页查询，关键代码是 PageHelper.startPage(pageNum, pageSize)，将前台分页查询参数传入。
+
+SysMenuServiceImpl.java
+
+```java
+package cn.asu.mybatisplus.service.impl;
+
+import cn.asu.mybatisplus.entity.SysMenu;
+import cn.asu.mybatisplus.mapper.SysMenuMapper;
+import cn.asu.mybatisplus.service.SysMenuService;
+import cn.asu.page.PageRequest;
+import cn.asu.page.PageResult;
+import cn.asu.page.PageUtils;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 菜单管理 服务实现类
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+@Service
+public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
+
+    @Autowired
+    private SysMenuMapper sysMenuMapper;
+
+    @Override
+    public PageResult findPage(PageRequest pageRequest) {
+        return PageUtils.getPageResult(pageRequest, getPageInfo(pageRequest));
+    }
+
+    /**
+     * 调用分页插件完成分页
+     * @param pageQuery
+     * @return
+     */
+    private PageInfo<SysMenu> getPageInfo(PageRequest pageRequest) {
+        int pageNum = pageRequest.getPageNum();
+        int pageSize = pageRequest.getPageSize();
+        PageHelper.startPage(pageNum, pageSize);
+        List<SysMenu> sysMenus = sysMenuMapper.selectPage();
+        return new PageInfo<SysMenu>(sysMenus);
+    }
+
+}
+```
+
+SysMenuController.java
+
+```java
+package cn.asu.mybatisplus.controller;
 
 
+import cn.asu.mybatisplus.service.SysMenuService;
+import cn.asu.page.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * <p>
+ * 菜单管理 前端控制器
+ * </p>
+ *
+ * @author
+ * @since 2020-12-19
+ */
+@RestController
+@RequestMapping("/sys-menu")
+public class SysMenuController {
+
+    @Autowired
+    private SysMenuService sysMenuService;
 
 
+    @PostMapping(value="/findPage")
+    public Object findPage(@RequestBody PageRequest pageQuery) {
+        return sysMenuService.findPage(pageQuery);
+    }
+
+}
+```
+
+PageUtils.java
+
+```java
+package cn.asu.page;
+
+import com.github.pagehelper.PageInfo;
+
+public class PageUtils {
+
+    /**
+     * 将分页信息封装到统一的接口
+     *
+     * @param pageRequest
+     * @param page
+     * @return
+     */
+    public static PageResult getPageResult(PageRequest pageRequest, PageInfo<?> pageInfo) {
+        PageResult pageResult = new PageResult();
+        pageResult.setPageNum(pageInfo.getPageNum());
+        pageResult.setPageSize(pageInfo.getPageSize());
+        pageResult.setTotalSize(pageInfo.getTotal());
+        pageResult.setTotalPages(pageInfo.getPages());
+        pageResult.setContent(pageInfo.getList());
+        return pageResult;
+    }
+
+}
+```
+
+PageResult.java
+
+```java
+package cn.asu.page;
+
+import lombok.Data;
+
+import java.util.List;
+
+/**
+ * 分页返回结果
+ */
+@Data
+public class PageResult {
+
+    /**
+     * 当前页码
+     */
+    private int pageNum;
+
+    /**
+     * 每页数量
+     */
+    private int pageSize;
+
+    /**
+     * 记录总数
+     */
+    private long totalSize;
+
+    /**
+     * 页码总数
+     */
+    private int totalPages;
+
+    /**
+     * 数据模型
+     */
+    private List<?> content;
+
+}
+```
+
+PageRequest.java
+
+```java
+package cn.asu.page;
+
+import lombok.Data;
+
+/**
+ * 分页请求
+ */
+@Data
+public class PageRequest {
+
+    /**
+     * 当前页码
+     */
+    private int pageNum;
+
+    /**
+     * 每页数量
+     */
+    private int pageSize;
+
+}
+```
+
+### 接口测试
+
+启动应用，访问：http://localhost:8089/swagger-ui.html，找到对应接口，模拟测试，结果如下。
+
+参数：pageNum: 1, pageSize: 5
+
+![image-20201220155303424](images/image-20201220155303424.png)
+
+参数：pageNum: 2, pageSize: 5
+
+![image-20201220155402061](images/image-20201220155402061.png)

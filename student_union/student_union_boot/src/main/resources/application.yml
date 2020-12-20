@@ -51,3 +51,10 @@ mybatis-plus:
 logging:
   level:
     cn.asu: debug
+
+# pagehelper
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql

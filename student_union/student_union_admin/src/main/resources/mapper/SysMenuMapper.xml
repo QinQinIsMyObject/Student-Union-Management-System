@@ -17,4 +17,9 @@
         <result column="last_update_time" property="lastUpdateTime"/>
         <result column="del_flag" property="delFlag"/>
     </resultMap>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        select *
+        from sys_menu
+    </select>
 </mapper>
