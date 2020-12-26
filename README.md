@@ -1043,6 +1043,713 @@ import mock from "@/mock/index.js";
 
 ## 六、优化登录流程
 
+### 完善登录流程
+
+#### 1. 丰富登录界面
+
+1.1 从 Element 指南中选择组件模板丰富登录界面，放置一个登录界面表单，包含账号密码输入框和登录重置按钮；稍微调整一下界面样式；添加页面组件显示规则和操作响应，其中登录成功后，把登录用户信息存储到本地会话，用于配置路由跳转目标。
+
+Login.vue
+
+```vue
+<template>
+  <el-form
+    :model="loginForm"
+    :rules="fieldRules"
+    ref="loginForm"
+    label-position="left"
+    label-width="0px"
+    class="demo-ruleForm login-container"
+  >
+    <h3 class="title">系统登录</h3>
+    <el-form-item prop="account">
+      <el-input
+        type="text"
+        v-model="loginForm.account"
+        auto-complete="off"
+        placeholder="账号"
+      ></el-input>
+    </el-form-item>
+    <el-form-item prop="password">
+      <el-input
+        type="password"
+        v-model="loginForm.password"
+        auto-complete="off"
+        placeholder="密码"
+      ></el-input>
+    </el-form-item>
+    <!-- <el-checkbox v-model="checked" checked class="remember">记住密码</el-checkbox> -->
+    <el-form-item style="width: 100%">
+      <el-button type="primary" style="width: 48%" @click.native.prevent="reset"
+        >重 置</el-button
+      >
+      <el-button
+        type="primary"
+        style="width: 48%"
+        @click.native.prevent="login"
+        :loading="logining"
+        >登 录</el-button
+      >
+    </el-form-item>
+  </el-form>
+</template>
+
+<script>
+// import mock from "@/mock/mock.js";
+import mock from "@/mock/index.js";
+
+import Cookies from "js-cookie";
+import router from "@/router";
+
+// export default {
+//   name: "Login",
+//   methods: {
+//     login() {
+//       this.$api
+//         .login()
+//         .then(function (res) {
+//           alert(res.data.token);
+//           Cookies.set("token", res.data.token); // 放置token到Cookie
+//           router.push("/"); // 登录成功，跳转到主页
+//         })
+//         .catch(function (res) {
+//           alert(res);
+//         });
+//     },
+//   },
+// };
+
+export default {
+  name: "Login",
+  data() {
+    return {
+      logining: false,
+      loginForm: {
+        account: "admin",
+        password: "123456",
+      },
+      fieldRules: {
+        account: [{ required: true, message: "请输入账号", trigger: "blur" }],
+        password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+      },
+      checked: true,
+    };
+  },
+  methods: {
+    login() {
+      let userInfo = {
+        account: this.loginForm.account,
+        password: this.loginForm.password,
+      };
+      this.$api
+        .login(JSON.stringify(userInfo))
+        .then((res) => {
+          Cookies.set("token", res.data.token); // 放置token到Cookie
+          sessionStorage.setItem("user", userInfo.account); // 保存用户到本地会话
+          this.$router.push("/"); // 登录成功，跳转到主页
+        })
+        .catch(function (res) {
+          alert(res);
+        });
+    },
+    reset() {
+      this.$refs.loginForm.resetFields();
+    },
+  },
+};
+</script>
+
+<style lang="scss" scoped>
+.login-container {
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  background-clip: padding-box;
+  margin: 180px auto;
+  width: 350px;
+  padding: 35px 35px 15px 35px;
+  background: #fff;
+  border: 1px solid #eaeaea;
+  box-shadow: 0 0 25px #cac6c6;
+  .title {
+    margin: 0px auto 40px auto;
+    text-align: center;
+    color: #505458;
+  }
+  .remember {
+    margin: 0px 0px 35px 0px;
+  }
+}
+</style>
+```
+
+1.2 最后效果如下图所示。
+
+![image-20201222163230782](images/image-20201222163230782.png)
+
+#### 2.修改接口
+
+修改 http/interface.js，把请求类型改为 post，并传入 data 参数。
+
+```js
+// 单独导出
+// export const login = () => {
+//     return axios({
+//         url: '/login',
+//         method: 'get'
+//     })
+// }
+export const login = data => {
+    return axios({
+        url: '/login',
+        method: 'post',
+        data
+    })
+}
+```
+
+#### 3.修改 mock 接口
+
+修改 mock/modules/logins.js，把请求类型改为 post。
+
+```js
+// 登录接口
+export function login() {
+    return {
+        // isOpen: false,
+        url: 'http://localhost:8080/login',
+        // type: 'get',
+        type: 'post',
+        data: {
+            'msg': 'success',
+            'code': 0,
+            'data': {
+                'token': '4344323121398'
+                // 其他数据
+            }
+        }
+    }
+}
+```
+
+#### 4.添加导航守卫
+
+在 router/index.js 中添加导航守卫，如下图所示，根据用户登录会话记录，路由到主页或登录界面。
+
+```js
+router.beforeEach((to, from, next) => {
+  // 登录界面登录成功之后，会把用户信息保存在会话
+  // 存在时间为会话生命周期，页面关闭即失效。
+  let user = sessionStorage.getItem('user')
+  if (to.path === '/login') {
+    // 如果是访问登录界面，如果用户会话信息存在，代表已登录过，跳转到主页
+    if (user) {
+      next({ path: '/' })
+    } else {
+      next()
+    }
+  } else {
+    if (!user) {
+      // 如果访问非登录界面，且户会话信息不存在，代表未登录，则跳转到登录界面
+      next({ path: '/login' })
+    } else {
+      next()
+    }
+  }
+})
+```
+
+#### 5.修改主页界面
+
+5.1 向 home.vue 添加组件，构建主界面。
+
+5.2 处理页面事件和页面数据显示，主要是两个事件和在 mounted 函数内获取页面数据。
+
+5.3 修饰调整 css 样式，构建界面，样式太多，就不贴了，直接看源码 ，调整完效果如下图所示。
+
+#### 6.嵌套路由
+
+6.1 在 views 目录下新建 Main、User、Menu 页面，用于菜单路由，内容随便显示点什么就可以。
+
+6.2 在 router/index.js 文件中添加子路由，分别指向子页面。
+
+6.3 在 views/Home.vue 页面对应的导航菜单中添加点击事件，路由到对应的子页面。
+
+6.4 登录之后，点击用户管理，路由到用户管理界面。
+
+6.5 这里发现点击导航菜单之后，菜单就不能点击了，经查看是导航页面坐标样式问题，把用户管理等页面的样式去掉就好了。
+
+6.6 同理添加机构管理、角色管理、日志管理的菜单之后，效果如下。
+
+## 七、国际化实现（之后基本都跳过）
+
+>https://www.cnblogs.com/xifengxiaoma/p/9544445.html
+
+### 国际化支持
+
+#### 1.安装依赖
+
+执行以下命令，安装 i18n 依赖。
+
+```sh
+yarn add vue-i18n
+```
+
+#### 2.添加配置
+
+2.1 在 src 下新建 i18n 目录，并创建一个 index.js。
+
+2.2 在 assets 目录下面创建连个多语言文件。
+
+2.3 在 main.js 中引入 i18n 并注入到 vue 对象中。
+
+#### 3.字符引用
+
+在原本使用字符串的地方，引入国际化字符串。
+
+把原本的“用户管理”、“菜单管理”等字符串换成如下格式引入。
+
+#### 3.切换菜单
+
+在用户信息前边添加一个用于语言切换的菜单，用于切换不同的语言。
+
+#### 4.启动测试
+
+## 八、更换皮肤主题
+
+>https://www.cnblogs.com/xifengxiaoma/p/9546965.html
+
+### 自定义主题
+
+#### 命令行主题工具
+
+#### 1.安装主题工具
+
+首先安装「主题生成工具」，全局安装。
+
+```
+yarn add element-theme -g 或 yarn add element-theme --dev
+```
+
+#### 2.安装chalk主题
+
+安装白垩主题，可以从 npm 安装或者从 GitHub 拉取最新代码，这里从 npm 安装。
+
+```
+yarn add element-theme-chalk -D
+```
+
+#### 3.初始化变量文件 
+
+主题生成工具安装成功后，如果全局安装可以在命令行里通过 `et` 调用工具，如果安装在当前目录下，需要通过 `node_modules/.bin/et` 访问到命令。执行 `-i` 初始化变量文件。默认输出到 `element-variables.scss`，当然你可以传参数指定文件输出目录。
+
+```
+node_modules/.bin/et -i
+```
+
+执行命令报错，可能是node版本过高导致，跳过。
+
+>https://segmentfault.com/a/1190000037561272
+
+![image-20201222175311243](images/image-20201222175311243.png)
+
+## 九、功能组件封装
+
+>https://www.cnblogs.com/xifengxiaoma/p/9556328.html
+
+### 组件封装
+
+为了避免组件代码的臃肿，这里对主要的功能部件进行封装，保证代码的模块化和简洁度。
+
+### 组件结构
+
+组件封装重构后，试图组件结构如下图所示
+
+#### 代码一览
+
+Home组件被简化，包含导航、头部和主内容三个组件。
+
+Home.vue HeadBar.vue MenuBar.vue Main.vue
+
+国际化语言切换也被封装成为了组件 LangSelector
+
+components/LangSelector/index.js
+
+```js
+<template>
+  <div class="lang-selector" :style="istyle" v-popover:popover>
+    <li :style="iconStyle" :class="icon"></li>
+    <el-popover
+      ref="popover"
+      placement="bottom-start"
+      :trigger="trigger"
+      v-model="visible"
+    >
+      <div class="item" @click="changeLanguage('zh_cn')">简体中文</div>
+      <div class="item" @click="changeLanguage('en_us')">English</div>
+    </el-popover>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "LangSelector",
+  props: {
+    istyle: {
+      type: String,
+      default: "width:60px;",
+    },
+    icon: {
+      type: String,
+      default: "fa fa-language fa-lg",
+    },
+    iconStyle: {
+      type: String,
+      default: "color:#fff;",
+    },
+    trigger: {
+      type: String,
+      default: "click",
+    },
+  },
+  data() {
+    return {
+      visible: false,
+    };
+  },
+  methods: {
+    // 语言切换
+    changeLanguage(lang) {
+      lang === "" ? "zh_cn" : lang;
+      this.$i18n.locale = lang;
+      this.visible = false;
+    },
+  },
+};
+</script>
+<style scoped lang="scss">
+.item {
+  font-size: 16px;
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  cursor: pointer;
+}
+.lang-selector:hover {
+  background: #636b6931;
+}
+.item:hover {
+  font-size: 18px;
+  background: #b0d6ce4d;
+}
+</style>
+```
+
+组件封装重构之后，同步修改路由配置
+
+router/index.js
+
+```js
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+
+import Login from '@/views/Login'
+import Home from '@/views/Home'
+import NotFound from '@/views/404'
+
+import { Main } from 'element-ui'
+import Login from '@/views/Login'
+import Intro from '@/views/Intro'
+import User from '@/views/SysMng/User'
+import Dept from '@/views/SysMng/Dept'
+import Role from '@/views/SysMng/Role'
+import Menu from '@/views/SysMng/Menu'
+import Log from '@/views/SysMng/Log'
+
+Vue.use(VueRouter)
+
+const routes = [
+  // {
+  //   path: '/',
+  //   name: 'Home',
+  //   component: Home
+  // },
+  // {
+  //   path: '/about',
+  //   name: 'About',
+  //   // route level code-splitting
+  //   // this generates a separate chunk (about.[hash].js) for this route
+  //   // which is lazy-loaded when the route is visited.
+  //   component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
+  // }
+  {
+    path: '/',
+    name: '首页',
+    component: Home,
+    children: [
+      { path: '', component: Intro, name: '系统介绍' },
+      { path: '/user', component: User, name: '用户管理' },
+      { path: '/dept', component: Dept, name: '机构管理' },
+      { path: '/role', component: Role, name: '角色管理' },
+      { path: '/menu', component: Menu, name: '菜单管理' },
+      { path: '/log', component: Log, name: '日志管理' }
+    ]
+  },
+  {
+    path: '/login',
+    name: '登录',
+    component: Login
+  }
+  , {
+    path: '/404',
+    name: 'notFound',
+    component: NotFound
+  }
+]
+
+router.beforeEach((to, from, next) => {
+  // 登录界面登录成功之后，会把用户信息保存在会话
+  // 存在时间为会话生命周期，页面关闭即失效。
+  let user = sessionStorage.getItem('user')
+  if (to.path === '/login') {
+    // 如果是访问登录界面，如果用户会话信息存在，代表已登录过，跳转到主页
+    if (user) {
+      next({ path: '/' })
+    } else {
+      next()
+    }
+  } else {
+    if (!user) {
+      // 如果访问非登录界面，且户会话信息不存在，代表未登录，则跳转到登录界面
+      next({ path: '/login' })
+    } else {
+      next()
+    }
+  }
+})
+
+const router = new VueRouter({
+  routes
+})
+
+export default router
+```
+
+#### 测试效果
+
+封装重构之后，启动界面，效果跟之前差别不大。
+
+## 十、管理应用状态
+
+> https://www.cnblogs.com/xifengxiaoma/p/9558290.html
+
+### 使用 Vuex 管理应用状态
+
+### 1. 引入背景
+
+像先前我们是有导航菜单栏收缩和展开功能的，但是因为组件封装的原因，隐藏按钮在头部组件，而导航菜单在导航菜单组件，这样就涉及到了组件收缩状态的共享问题。收缩展开按钮触发收缩状态的修改，导航菜单需要根据收缩状态来设置导航栏的宽度。这样就需要在收缩状态变更时刷新导航菜单样式。后续类似的组件状态共享还会有许多。为了解决组件间状态的共享，增加组件交互的易用性，我们引入 vuex 专门管理应用状态。
+
+### 2. 添加配置
+
+store 目录，专门管理应用状态，在 index.js 中添加代码。
+
+```js
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex)
+
+export default new Vuex.Store({
+  state: {
+    collapse: false  // 导航栏收缩状态
+  },
+  mutations: {
+    collapse(state) {  // 改变收缩状态
+      state.collapse = !state.collapse;
+    }
+  },
+  actions: {
+  },
+  modules: {
+  }
+})
+```
+
+### 3. 使用 Store
+
+#### 3.1 修改状态
+
+在原先响应折叠导航栏的函数内替换原有逻辑，改为发送提交请求来改变收缩状态。
+
+```js
+// 折叠导航栏
+collapse:function () {
+    $store.commit('collapse')
+}
+```
+
+#### 3.2 获取状态
+
+在原先引用 collapse 的地方改为引用 $store.state.collapse 。
+
+根据收缩状态绑定不同样式，就可以实现导航菜单栏根据收缩状态更新页面效果了。
+
+MenuBar.vue HeadBar.vue  Main.vue 
+
+### 4. 测试效果
+
+进入主页，点击收缩按钮，效果如下图。
+
+### Store 模块化
+
+现在我们的状态都维护在index.js，状态一多就会出现臃肿，这里可以根据需求进行模块化。
+
+### 1. 文件结构
+
+模块化后的文件结构
+
+### 2. Store 封装
+
+改写index.js，引入模块化，这里把之前的状态抽取到AppStore，后续可能还会有UserStore、MenuStore之类的。
+
+AppStore.js
+
+###  3. 状态引用
+
+在引用 store 状态的地方加上模块名称
+
+如果一个文件内引用过多，嫌引用路劲又长又臭，可以使用 mapState、mapGetter、mapActions 工具进行简化。
+
+如 MenuBar.vue 中引用较多，我们用 mapState 简化对属性的引用。如下图，给状态赋予别名。
+
+ 引用状态的地方就可以直接用上面定义的别名进行访问了。
+
+mapState、mapGetter、mapActions 工具对于文件内大量又长又臭的状态引用时非常有用，可以适当的运用。
+
+### 封装收缩组件
+
+### 1. 组件封装
+
+ 如下图，新建目录和文件，封装收缩组件展开导航栏组件。
+
+Hamburger/index.vue
+
+### 2. 引入组件
+
+HeadBar.vue 中引入组件
+
+响应函数，通过 store 修改收缩状态
+
+### 3. 测试效果
+
+进入主页，效果如下图。
+
+### 封装面包屑组件
+
+将面包屑从主内容中抽取出来，封装成 BreadCrumb。
+
+BreadCrumb/index.vue
+
+main.js 中 引入
+
+### 动态换肤
+
+### 1. 功能背景
+
+之前的动态换肤，只能刷新 Element 相关组件的颜色，而如果我们希望在换肤的时候我们的头部区域也同步改变就需要做进一步的修改了。接下来，我们就实现这个功能，赋予换肤组件在更新 Element 组件颜色的时候，可以定制插入一些自定义的操作。
+
+### 2. 改进ThemePicker
+
+修改 ThemePicker 插件， 绑定导出函数和主题色参数。
+
+### 3. 父组件函数绑定
+
+在父组件绑定处理函数，增加自定义同步更新逻辑。
+
+这里是切换主题颜色的时候，设置 store 状态，保存共享主题色，这样其他绑定主题色的组件都可以自动更新了。
+
+### 4. 添加共享状态
+
+在 store 中定义主题色相关的状态。
+
+### 5. 共享状态引入
+
+在要使用的组件处引入主题色状态。
+
+组件样式绑定主题色状态，主题色并更时，更新组件背景色样式。
+
+### 6. 测试效果
+
+进入主页，点击动态换肤取色器，换肤效果如下。
+
+## 十一、接口格式定义
+
+> https://www.cnblogs.com/xifengxiaoma/p/9570268.html
+
+## 接口请求格式定义
+
+前台显示需要后台数据，我们这里先把前后端交互接口定义好，没有后台的时候，也方便用mock模拟。
+
+接口定义遵循几个规范：
+
+**1. 接口按功能模块划分。**
+
+系统登录：登录相关接口
+
+用户管理：用户管理相关接口
+
+机构管理：机构管理相关接口
+
+角色管理 ： 角色管理相关接口
+
+菜单管理 ： 菜单管理相关接口
+
+字典管理 ： 字典管理相关接口
+
+日志管理 ： 日志管理相关接口
+
+**2. 通用增删改查接口采用统一命名规范。**
+
+save ： 保存操作
+
+update： 更新操作
+
+delete： 删除操作
+
+findAll： 查询全部
+
+findPage ： 分页查询
+
+findTree ： 返回对象树
+
+findByXX：根据XX查询
+
+**2. 统一请求响应结果。**
+
+格式如下：
+
+## 十二、动态加载菜单
+
+之前我们的导航树都是写死在页面里的，而实际应用中是需要从后台服务器获取菜单数据之后动态生成的。
+
+我们在这里就用上一篇准备好的数据格式Mock出模拟数据，然后动态生成我们的导航菜单。
+
+#### 接口模块化
+
+我们向来讲究模块化，之前接口都集中在，interface.js，我们现在把它改名为 api.js，并把里边原来登录、用户、菜单的相关接口都转移到我们新建的接口模块文件中。
+
+模块化之后的文件结构如下图所示
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3168,7 +3875,7 @@ https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
 
 使用Mybatis时，最头痛的就是写分页，需要先写一个查询count的select语句，然后再写一个真正分页查询的语句，当查询条件多了之后，会发现真不想花双倍的时间写 count 和 select，幸好我们有 pagehelper 分页插件，pagehelper 是一个强大实用的 MyBatis 分页插件，可以帮助我们快速的实现分页功能。那么，接下来我们就来一起体验下吧。
 
-### 添加依赖
+#### 添加依赖
 
 在 admin-pom.xml 文件内添加分页插件依赖包。
 
@@ -3181,7 +3888,7 @@ https://github.com/alibaba/druid/tree/master/druid-spring-boot-starter
 </dependency>
 ```
 
-### 添加配置
+#### 添加配置
 
 在 boot/application.yml 配置文件内添加分页插件配置。
 
@@ -3194,7 +3901,7 @@ pagehelper:
     params: count=countSql
 ```
 
-### 分页代码
+#### 分页代码
 
 首先，在 DAO 层添加分页查找方法。因为我们的表只有菜单有多条数据，所以选择给菜单加一个分页查询接口。
 
@@ -3463,7 +4170,7 @@ public class PageRequest {
 }
 ```
 
-### 接口测试
+#### 接口测试
 
 启动应用，访问：http://localhost:8089/swagger-ui.html，找到对应接口，模拟测试，结果如下。
 
@@ -3474,3 +4181,4 @@ public class PageRequest {
 参数：pageNum: 2, pageSize: 5
 
 ![image-20201220155402061](images/image-20201220155402061.png)
+

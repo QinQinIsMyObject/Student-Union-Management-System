@@ -1,0 +1,14 @@
+{
+    "common": {
+        "home": "Home",
+        "login": "Login",
+        "exit": "Exit"
+    },
+    "sys": {
+        "userMng": "User Manage",
+        "deptMng": "Dept Manage",
+        "roleMng": "Role Manage",
+        "menuMng": "Menu Manage",
+        "logMng": "Log Manage"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "common": {
+        "home": "首页",
+        "login": "登录",
+        "exit": "退出"
+    },
+    "sys": {
+        "userMng": "用户管理",
+        "deptMng": "机构管理",
+        "roleMng": "角色管理",
+        "menuMng": "菜单管理",
+        "logMng": "日志管理"
+    }
+}
